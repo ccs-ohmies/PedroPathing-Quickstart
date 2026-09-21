@@ -13,16 +13,16 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class AutoTestPathMike extends OpMode {
     private final Pose firstPose = new Pose(0,0, Math.toRadians(90));
     private final Pose secondPose = new Pose(0,24, Math.toRadians(90));
-    private final Pose secondTurnPose = new Pose(5,24, Math.toRadians(180));
+    private final double secondTurnHeading = Math.toRadians(180);
     private final Pose thirdPose = new Pose(-24, 24, Math.toRadians(270));
     private final Pose fourthPose = new Pose(-24, -24, Math.toRadians(0));
-    private final Pose fifthPose = new Pose(24, -24, Math.toRadians(90));
+    private final Pose fifthPose = new Pose(24, -24, Math.toRadians(0));
+    private final double fifthTurnHeading = Math.toRadians(90);
     private final Pose sixthPose = new Pose(24, 24, Math.toRadians(180));
     private final Pose seventhPose = new Pose(0, 24, Math.toRadians(270));
     private Follower follower = null;
 
     private Path firstPath = null;
-    private Path firstTurnPath = null;
     private Path secondPath = null;
     private Path thirdPath = null;
     private Path fourthPath = null;
@@ -37,6 +37,7 @@ public class AutoTestPathMike extends OpMode {
         PATH_TO_THIRD_POSITION,
         PATH_TO_FOURTH_POSITON,
         PATH_TO_FIFTH_POSITON,
+        FIFTH_POSITION_TURN,
         PATH_TO_SIXTH_POSITON,
         PATH_TO_SEVENTH_POSITON,
         PATH_FINISHED
@@ -44,12 +45,11 @@ public class AutoTestPathMike extends OpMode {
     private PathState pathState;
     private ElapsedTime pathTime;
     public static final double POSITION_WAIT_TIME_MS = 2000;
+    public static final double INVALID_HEADING = 999;
 
     private void buildPaths() {
         firstPath = new Path(new BezierLine(firstPose, secondPose));
         firstPath.setLinearHeadingInterpolation(firstPose.getHeading(), secondPose.getHeading());
-        firstTurnPath = new Path(new BezierLine(secondPose, secondTurnPose));
-        firstTurnPath.setLinearHeadingInterpolation(secondPose.getHeading(), secondTurnPose.getHeading());
         secondPath = new Path(new BezierLine(secondPose, thirdPose));
         secondPath.setLinearHeadingInterpolation(secondPose.getHeading(), thirdPose.getHeading());
         thirdPath = new Path(new BezierLine(thirdPose, fourthPose));
@@ -75,6 +75,32 @@ public class AutoTestPathMike extends OpMode {
         } else {
             telemetry.addData("Waiting for milliseconds=", POSITION_WAIT_TIME_MS - pathTime.milliseconds());
         }
+    }
+
+    private void updateTurnState(double nextHeading, PathState nextPathState) {
+        if (pathTime.milliseconds() >= POSITION_WAIT_TIME_MS) {
+            pathState = nextPathState;
+            if (nextHeading != INVALID_HEADING) {
+                turnToHeading(nextHeading);
+            }
+            pathTime.reset();
+            telemetry.addData("New Path State=", nextPathState);
+        } else {
+            telemetry.addData("Waiting for milliseconds=", POSITION_WAIT_TIME_MS - pathTime.milliseconds());
+        }
+    }
+
+    /**
+     * Commands the follower to turn in place to a specific target heading.
+     * @param targetHeading The heading to turn to, in radians.
+     */
+    private void turnToHeading(double targetHeading) {
+        // Grab the current x and y position from the follower
+        double currentX = follower.getPose().getX();
+        double currentY = follower.getPose().getY();
+
+        // Command the follower to hold this exact position but face the new target heading
+        follower.holdPoint(new Pose(currentX, currentY, targetHeading));
     }
 
     @Override
@@ -103,7 +129,7 @@ public class AutoTestPathMike extends OpMode {
                 follower.followPath(firstPath);
                 break;
             case PATH_TO_FIRST_POSITION:
-                updatePathState(firstTurnPath, PathState.FIRST_POSITION_TURN);
+                updateTurnState(secondTurnHeading, PathState.FIRST_POSITION_TURN);
                 break;
             case FIRST_POSITION_TURN:
                 updatePathState(secondPath, PathState.PATH_TO_SECOND_POSITION);
@@ -118,6 +144,9 @@ public class AutoTestPathMike extends OpMode {
                 updatePathState(fifthPath, PathState.PATH_TO_FIFTH_POSITON);
                 break;
             case PATH_TO_FIFTH_POSITON:
+                updateTurnState(fifthTurnHeading, PathState.FIFTH_POSITION_TURN);
+                break;
+            case FIFTH_POSITION_TURN:
                 updatePathState(sixthPath, PathState.PATH_TO_SIXTH_POSITON);
                 break;
             case PATH_TO_SIXTH_POSITON:
