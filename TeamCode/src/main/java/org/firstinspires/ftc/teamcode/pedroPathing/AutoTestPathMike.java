@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class AutoTestPathMike extends OpMode {
     private final Pose firstPose = new Pose(0,0, Math.toRadians(90));
     private final Pose secondPose = new Pose(0,24, Math.toRadians(90));
-    private final Pose secondTurnPose = new Pose(0,24, Math.toRadians(180));
+    private final Pose secondTurnPose = new Pose(5,24, Math.toRadians(180));
     private final Pose thirdPose = new Pose(-24, 24, Math.toRadians(270));
     private final Pose fourthPose = new Pose(-24, -24, Math.toRadians(0));
     private final Pose fifthPose = new Pose(24, -24, Math.toRadians(90));
@@ -43,7 +43,7 @@ public class AutoTestPathMike extends OpMode {
     }
     private PathState pathState;
     private ElapsedTime pathTime;
-    public static final double POSITION_WAIT_TIME_MS = 5000;
+    public static final double POSITION_WAIT_TIME_MS = 2000;
 
     private void buildPaths() {
         firstPath = new Path(new BezierLine(firstPose, secondPose));
@@ -67,7 +67,7 @@ public class AutoTestPathMike extends OpMode {
     private void updatePathState(Path nextPath, PathState nextPathState) {
         if (pathTime.milliseconds() >= POSITION_WAIT_TIME_MS) {
             pathState = nextPathState;
-            if (pathState != null) {
+            if (nextPath != null) {
                 follower.followPath(nextPath);
             }
             pathTime.reset();
@@ -84,7 +84,7 @@ public class AutoTestPathMike extends OpMode {
         buildPaths();
         follower.setPose(firstPose);
         pathTime = new ElapsedTime();
-        telemetry.addLine("Init method Triggered");
+        telemetry.addLine("Init method Triggered Mike");
     }
 
     @Override
